@@ -1,14 +1,21 @@
 package com.itheima.publisher;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageDeliveryMode;
+import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * ClassName：SpringAmqpTest
@@ -19,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @version: 1.0
  */
 @SpringBootTest
+@Slf4j
 class SpringAmqpTest {
 
     @Autowired
@@ -83,5 +91,27 @@ class SpringAmqpTest {
         msg.put("age", 21);
         // 发送消息
         rabbitTemplate.convertAndSend("object.queue", msg);
+    }
+
+    @Test
+    public void testSendDelayMessage(){
+        rabbitTemplate.convertAndSend("normal.direct", "hi", "hello", new MessagePostProcessor() {
+            @Override
+            public Message postProcessMessage(Message message) throws AmqpException {
+                message.getMessageProperties().setExpiration("10000");
+                return message;
+            }
+        });
+    }
+
+    @Test
+    public void testSendDelayMessageByPlugin(){
+        rabbitTemplate.convertAndSend("delay.direct", "hi", "hello", new MessagePostProcessor() {
+            @Override
+            public Message postProcessMessage(Message message) throws AmqpException {
+                message.getMessageProperties().setDelay(10000);
+                return message;
+            }
+        });
     }
 }
